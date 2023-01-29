@@ -1,8 +1,11 @@
 ---
 title: "R Notebook"
-output: html_notebook
-editor_options: 
-  chunk_output_type: console
+output: html_document
+knit: (function(input_file, encoding) {
+    out_dir <- 'docs';
+    rmarkdown::render(input_file,
+    encoding=encoding,
+    output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
 ---
 
 Data from 1960 to 2010 raining days, there are 4168 observations 13 days of which are rain exceeds 1000 (10cm)
@@ -10,7 +13,6 @@ Data from 1960 to 2010 raining days, there are 4168 observations 13 days of whic
 Change of exceeds 1000 is 0.003119002 0.31% change
 
 ```{r}
-
 library(tidyverse)
 library(readr)
 library(drc)
@@ -23,12 +25,14 @@ library("moments") # for skewness of data
 # Data
 
 ```{r}
+# A saved csv file from NOAA API
 read.csv("./data/prcp.csv") %>%
   mutate(date = as.Date(date)) %>%
   mutate(year = format(date, "%Y")) %>%
   filter(prcp != 0) %>%
   dplyr::select(date, year, prcp) -> data
 
+# Extract Histogram Data Raw from Graphic
 data %>%
   filter(year <= 2020) %>%
   pull(prcp) %>%
