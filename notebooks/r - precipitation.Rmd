@@ -1,0 +1,289 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r message=FALSE, include=FALSE}
+library(rnoaa)  #Now you can load all the required libraries.
+#library(ncdf)
+#install.packages("ncdf")
+library(plyr)
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(plotly)
+
+library(tidyverse)
+```
+
+# Risks
+
+## Possion Process & Linear Model
+```{r}
+library(dplyr)
+library(readr)
+df <- read_csv("raw/prcp.csv")
+
+df %>%
+  mutate(year = format(date, "%Y")) %>%
+  dplyr::select(date, year, prcp) %>%
+  group_by(year) %>%
+  filter(prcp != 0) %>%
+  summarise(rain_days = length(prcp)) -> rainDays
+
+df %>%
+  mutate(year = format(date, "%Y")) %>%
+  dplyr::select(date, year, prcp) %>%
+  group_by(year) %>%
+  summarise(year_days = length(year)) -> yearDays
+```
+
+
+```{r}
+# filter out year that contains irregular day of years
+yearDays %>%
+  filter(year_days < 365)
+```
+
+
+```{r}
+rainDays %>% left_join(yearDays, by = "year") %>%
+  mutate(rate = rain_days/year_days) %>%
+  with(plot(x = year, y = rate))
+```
+
+```{r}
+rainDays %>% left_join(yearDays, by = "year") %>%
+  mutate(rate = rain_days/year_days) %>%
+  pull(rate) %>%
+  density() %>%
+  plot()
+```
+
+
+```{r}
+rainDays %>% left_join(yearDays, by = "year") %>%
+  mutate(rate = rain_days/year_days) %>%
+  filter(year <= 2015) %>%
+  mutate(year = as.numeric(year)) -> data
+length(data$year)
+```
+
+```{r}
+sd(data$rate)
+mean(data$rate)
+
+lm(data = data, rate ~ year) -> mod.lm
+summary(mod.lm)
+residuals(mod.lm) %>% density() %>% plot
+```
+mean of rain rate = 0.2217114
+sd of rain rate = 0.03215555
+model sd = 0.03056
+F-statistic: 6.788 on 1 and 51 DF,  p-value: 0.012
+
+In this statistically model you assume the change of rain is normally distributed. But in this case residual is slightly tiled towards left... 
+
+So... 85% confident that the frequency of raining days are slightly decreasing
+
+## Expotential 
+Signs that percepitation is exponentially distributed. 
+
+```{r}
+library(dplyr)
+df %>%
+  mutate(year = format(date, "%Y")) %>%
+  dplyr::select(date, year, prcp) %>%
+  group_by(year) %>%
+  filter(prcp != 0) %>%
+  filter(year <= 2012) %>%
+  summarise(mean = mean(prcp), sd = sd(prcp), median = median(prcp)) -> x
+
+with(x, plot(x = mean, y = sd, sub = "\nStandard deviation is linear to that mean value each year. \nSuggesting exponential distribution"))
+with(x, plot(x = mean, y = median))
+with(x, plot(x = year, y = mean - median))
+with(x, plot(x = mean, y = sd/mean))
+
+lm(data = x, sd ~ mean) %>% summary()
+```
+This should be enough to prove the potential distribution because mean and is correlated??
+
+```{r}
+df %>%
+  mutate(year = format(date, "%Y")) %>%
+  dplyr::select(date, year, prcp) %>%
+  group_by(year) %>%
+  filter(prcp != 0) %>%
+  filter(year <= 2012) %>%
+  mutate(log_prc = log(prcp)) %>%
+  summarise(mean = mean(log_prc), sd = sd(log_prc)) -> log_x
+
+with(log_x, plot(x = mean, y = sd))
+
+df %>%
+  mutate(year = format(date, "%Y")) %>%
+  dplyr::select(date, year, prcp) %>%
+  group_by(year) %>%
+  filter(prcp != 0) %>%
+  filter(year <= 2012) %>%
+  mutate(log_prc = 5.041121*log(prcp)) %>%
+  summarise(mean = mean(log_prc), sd = sd(log_prc)) -> logk_x
+with(logk_x, plot(x = mean, y = sd))
+
+```
+
+
+```{r}
+df %>%
+  mutate(year = format(date, "%Y")) %>%
+  dplyr::select(date, year, prcp) %>%
+  group_by(year) %>%
+  filter(prcp != 0) %>%
+  filter(year <= 2012) %>%
+  pull(prcp) %>%
+  hist(breaks = 1000, freq = TRUE) -> hist
+names(hist)
+hist$density %>% length()
+hist$mids %>% length()
+
+x <- hist$mids
+y <- hist$density
+
+data.frame(x, y) -> seed
+seed[sample(nrow(seed), 750),]
+
+library(drc)
+library(nlme)
+
+update.packages("drc")
+seed %>%
+  filter( x <= 400) -> tailess
+
+mod.exd <- drm(y ~ x, fct = EXD.2(), data = seed)
+mod <- drm(y ~ x, fct = AR.2(), data = seed)
+
+```
+plot hist
+```{r}
+with(hist, plot(mids, density, pch = ".", xlim = c(0, 200)))
+sum(hist$density)
+```
+plot model
+```{r}
+plot(x = seed$x, y = fitted(mod.exd), type = "l", col = "blue", xlim = c(0,300))
+lines(x = seed$x, y = tailess$y, type = "p", col = alpha("black", 0.5))
+```
+```{r}
+model <- drm(y ~ log(x), fct = EXD.2(), data = seed)
+```
+
+```{r}
+plot(x = seed$x, y = fitted(model), type = "l", col = "blue", xlim = c(0, 300))
+lines(x = seed$x, y = seed$y, type = "p", col = alpha("black", 0.5))
+```
+
+So you it proves log(x) is exponentially distributed? 
+```{r}
+summary(model)
+```
+
+f(x) = c + (d-c)(\exp(-x/e))
+
+0.7828405 = 1/e = Ighag = 10* 0.07740550
+ I think it is something to do with the scale x needs to be multiplied by 10 
+ 
+ or log x needs to be multiplied by 10 
+ 
+so we derive this function perhaps?? 10 * log (x) ~ exponential() and then give parameter a value 0.07740550.. 
+
+Hist density is a function??
+
+```{r}
+x = log()
+d = 0.07740550
+e = 1.27739939
+
+k <- 1/e/d  #10.1135
+log(1000)*k
+
+1 - pexp(log(1000)*k, d)
+```
+compare this result to from counting raindays 
+```{r}
+df %>%
+  mutate(year = format(date, "%Y")) %>%
+  dplyr::select(date, year, prcp) %>%
+  group_by(year) %>%
+  filter(prcp != 0) %>%
+  pull(prcp) %>%
+  length()
+
+%>%
+  filter(year <= 2012) %>%
+  filter(prcp >= 1000) 
+
+%>%
+  pull(prcp)  %>%
+  length()
+
+
+13/5025
+
+x <- hist$mids
+y <- hist$count
+
+data.frame(x, y) -> seed
+seed[seed$x >= 1000,]$y
+
+sum(hist$counts)
+length(df$prcp)
+```
+0.002587065 0.25% percent... 
+
+compares to probability density estimate: 0.004482068
+
+0.4% probability that in any rain day a rain would exceed 10cm 
+
+
+```{r}
+
+```
+
+
+
+# Prediction
+```{r}
+#library(forecast)
+g <- df %>%
+  ggplot(aes(x = date, y = prcp)) + 
+  geom_line(color = "blue") + 
+  theme(panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_rect(fill = "#fafafa"),
+          plot.background = element_rect(fill = "white")
+        )
+ggplotly(g)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

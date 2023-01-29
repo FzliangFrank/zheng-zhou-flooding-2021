@@ -1,0 +1,36 @@
+"0","```r
+list <- c()
+listB <- c()
+Year <- c()
+dlist <- c()
+elist <- c()
+klist <- c()
+for(n in BREAKS){
+  for(i in YEAR){
+    data %>%
+      filter((year >= i) & (year <= i + 19)) %>%
+      pull(prcp) %>%
+      hist(breaks = n, plot = FALSE) -> hist
+    hist$counts %>% sum() -> sum
+    x <- hist$mids 
+    y <- hist$density 
+    data.frame(x, y) -> dens 
+    mod <- drm(data = dens, y ~ log(x), fct = EXD.2())
+    d <- mod$parmMat[1]
+    e <- mod$parmMat[2]
+    k <- 1/e/d
+    p <- 1 - pexp(log(1500)*k, d)
+    list <- c(list, p)
+    listB <- c(listB, n)
+    Year <- c(Year, i)
+    dlist <- c(dlist, d)
+    elist <- c(elist, e)
+    klist <- c(klist, k)
+  }}
+mtr <- data.frame(year = Year,
+                    Breaks = listB, 
+                      Probability = list, 
+                  parameter_d = dlist,
+                  parameter_e = elist,
+                  parameter_k = klist)
+```"

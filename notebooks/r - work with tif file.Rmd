@@ -1,0 +1,42 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+You need `raster` and `rgdal` to read file with `tif` tag.
+See here: https://www.earthdatascience.org/courses/earth-analytics/lidar-raster-data-r/introduction-to-spatial-metadata-r/
+```{r}
+#install.packages("Libgeotiff")
+#library("GeoTIFF")
+library(raster)
+library(rgdal)
+#install.packages("sf")
+library(sf)
+
+library(tiff)
+#install.packages("tiff")
+library(ggplot2)
+```
+
+```{f}
+GDALinfo("raw/5096.tif")
+```
+
+```{r}
+lidar <- raster(x = "raw/5096.tif")
+
+crs(lidar)
+lidar@extent
+nlayers(lidar)
+
+plot(lidar)
+```
+```{r}
+ggplot() +
+    geom_raster(data = lidar , aes(x = x, y = y, fill = HARV_dsmCrop)) +
+    scale_fill_viridis_c() +
+    coord_quickmap()
+```
+

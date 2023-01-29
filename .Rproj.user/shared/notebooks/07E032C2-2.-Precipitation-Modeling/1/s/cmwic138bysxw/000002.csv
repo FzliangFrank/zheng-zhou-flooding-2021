@@ -1,0 +1,7 @@
+"0","```r
+hist$counts %>% sum() -> sum
+x <- hist$mids 
+y <- hist$counts/sum 
+
+data.frame(x, y) -> dens 
+```"

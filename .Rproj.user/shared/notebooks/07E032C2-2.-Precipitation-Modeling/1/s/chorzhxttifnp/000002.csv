@@ -1,0 +1,22 @@
+"0","```r
+yr = 1960
+data %>%
+  filter((year >= yr) & (year <= yr + 9)) %>%
+  pull(prcp) %>%
+  hist(breaks = 1000, plot = FALSE) -> hist
+hist$counts %>% sum() -> sum
+x <- hist$mids 
+y <- hist$counts/sum 
+data.frame(x, y) -> dens 
+mod <- drm(data = dens, y ~ log(x), fct = EXD.2())
+d <- mod$parmMat[1]
+e <- mod$parmMat[2]
+k <- 1/e/d
+1 - pexp(log(1000)*k, d)
+```"
+"1","[1] 0.0002201357
+"
+"0","```r
+plot(x = dens$x, y = fitted(mod), type = \"l\", col = \"blue\", xlim = c(0, 300))
+lines(x = dens$x, y = dens$y, type = \"p\", col = alpha(\"black\", 0.5))
+```"

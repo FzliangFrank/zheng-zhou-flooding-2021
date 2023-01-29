@@ -1,0 +1,15 @@
+"0","```r
+mtr %>%
+  dplyr::select(year, Breaks, parameter_d, parameter_e) %>%
+  mutate(Breaks = as.factor(Breaks)) %>%
+  melt(id = c(\"year\", \"Breaks\"), variable.name = \"parameter\") %>%
+  ggplot(aes(x = year, y = value)) + 
+    geom_line(aes(x = year, y = value, linetype = parameter, color = Breaks)) +
+    scale_color_brewer(palette = \"Purples\") +
+  theme(panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_rect(fill = \"#fafafa\"),
+          plot.background = element_rect(fill = \"white\")
+        )
+```"

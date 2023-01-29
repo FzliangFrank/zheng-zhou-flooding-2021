@@ -1,0 +1,7 @@
+"0","```r
+ggplotly(g)
+
+```"
+"1","n too large, allowed maximum for palette Blues is 9
+Returning the palette you asked for with that many colors
+"

@@ -1,0 +1,7 @@
+"0","```r
+mtr %>%
+  filter(Breaks == 21) %>%
+  left_join(meth, by = c(\"year\" = \"Year\")) %>%
+  select(year, Probability, Length) %>%
+  mutate(days = Probability*Length)
+```"

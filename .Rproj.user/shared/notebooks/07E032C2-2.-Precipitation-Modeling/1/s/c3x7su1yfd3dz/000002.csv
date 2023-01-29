@@ -1,0 +1,14 @@
+"0","```r
+g <- df %>%
+  ggplot(aes(x = date, y = prcp)) + 
+  geom_line(color = \"blue\") + 
+  theme(panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_rect(fill = \"#fafafa\"),
+          plot.background = element_rect(fill = \"white\")
+        ) + 
+  geom_line(aes(x = date, y = rep(1500, length(date))), color = \"lightblue\") + 
+  ylab(\"Precipitation (in tenth of mm\")
+ggplotly(g)
+```"

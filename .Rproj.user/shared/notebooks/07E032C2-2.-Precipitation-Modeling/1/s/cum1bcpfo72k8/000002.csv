@@ -1,0 +1,40 @@
+"0","```r
+lenlist <- c()
+kulist <- c()
+for(yr in YEAR){
+data %>%
+      filter((year >= yr) & (year <= yr + 19)) %>%
+      dplyr::select(year, prcp) %>% 
+      pull(prcp) %>%
+      length() -> n
+  lenlist <- c(lenlist, n)
+data %>%
+      filter((year >= yr) & (year <= yr + 19)) %>%
+      dplyr::select(year, prcp) %>% 
+      pull(prcp) %>%
+      kurtosis() -> ku
+  kulist <- c(kulist, ku)
+}
+Square_root = c()
+Sturges = c()
+Rice = c()
+Donna = c()
+for(n in lenlist){
+  sq = ceiling(n^0.5)
+  sg = ceiling(log(n, 2)) + 1
+  rc = ceiling(2*n^(1/3))
+  igh = (6*(n - 2)/(n +1)/(n +3))^0.5
+  dn = log(abs(1 + kulist[which(lenlist %in% n)]/igh) , 2) + log(n, 2) + 1
+Square_root = c(Square_root, sq)
+Sturges = c(Sturges, sg)
+Rice = c(Rice, rc)
+Donna = c(Donna, dn)
+}
+data.frame( Year = YEAR,
+          Length = lenlist,
+           Square_root = Square_root, 
+           Sturges = Sturges,
+           Rice = Rice, 
+           Donna = Donna
+           ) -> meth
+```"

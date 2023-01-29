@@ -1,0 +1,4 @@
+"0","```r
+plot(x = dens$x, y = fitted(mod.exd), type = \"l\", col = \"blue\", xlim = c(0,300))
+lines(x = dens$x, y = dens$y, type = \"p\", col = alpha(\"black\", 0.5))
+```"

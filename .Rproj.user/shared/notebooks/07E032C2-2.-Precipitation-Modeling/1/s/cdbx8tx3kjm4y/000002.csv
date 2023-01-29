@@ -1,0 +1,17 @@
+"0","```r
+mtr %>%
+  mutate(year = as.factor(year)) %>%
+  mutate(Breaks = as.factor(Breaks)) %>%
+  ggplot(aes(y = parameter_d, x = parameter_e, color = year)) + 
+    geom_jitter(alpha = 0.8) + 
+    scale_color_brewer(palette = \"Reds\") +
+  theme(panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_rect(fill = \"#fafafa\"),
+          plot.background = element_rect(fill = \"white\")
+        ) + 
+    xlab(\"parameter e: skewness of the curve\") + 
+    ylab(\"parameter d: height of the curve\") 
+    
+```"

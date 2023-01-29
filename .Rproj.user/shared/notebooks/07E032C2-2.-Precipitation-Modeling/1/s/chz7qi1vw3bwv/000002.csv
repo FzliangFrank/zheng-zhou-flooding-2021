@@ -1,0 +1,14 @@
+"0","```r
+mtr %>%
+  mutate(Breaks = as.factor(Breaks)) %>%
+  ggplot(aes(x = year, y = parameter_k, color = Breaks)) + 
+    geom_point() + 
+    geom_line() + 
+    scale_color_brewer(palette = \"Blues\") +
+  theme(panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_rect(fill = \"#fafafa\"),
+          plot.background = element_rect(fill = \"white\")
+        )
+```"

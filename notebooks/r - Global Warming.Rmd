@@ -1,0 +1,214 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+library(readr)
+library(tidyverse)
+library(ggplot2)
+library(plyr)
+library(dplyr)
+library(devtools)
+noaa_data <- read_csv("./raw/noaa_data.csv")
+
+library(lme4)
+```
+
+# Modeling
+
+## Mixed Effect Model
+
+Data
+
+```{r}
+start = 1970
+end = 2000
+
+noaa_data %>%
+  select(date, tmax) %>%
+  mutate(year = format(date, "%Y") ) %>%
+  mutate(month = format(date, "%m") ) -> data
+
+data[(data$year >= start) & (data$year <= end), ] %>%
+  mutate(year = factor(year)) %>%
+  mutate(month = factor(month)) -> sub
+
+index = 1:length(sub$year)
+Ydays =length(sub$year)/(end - start + 1) #divided by how many years
+time = index/Ydays
+
+```
+
+### year/month
+
+```{r}
+model1 <- lmer(data = sub, tmax ~ index + sin(2*pi*time) + cos(2*pi*time) + (1 | year/month))
+model2 <- lmer(data = sub, tmax ~ sin(2*pi*time) + cos(2*pi*time) + (1 | year/month))
+
+anova(model1, model2)
+
+lmer(data = sub, tmax ~ index + sin(2*pi*time) + cos(2*pi*time) + (1 | year/month)) %>% summary()
+```
+
+### year
+```{r}
+model3 <- lmer(data = sub, tmax ~ index + sin(2*pi*time) + cos(2*pi*time) + (1 | year), REML = FALSE)
+model4 <- lmer(data = sub, tmax ~ sin(2*pi*time) + cos(2*pi*time) + (1|year), REML = FALSE)
+
+anova(model3, model4) #compare model
+
+lmer(data = sub, tmax ~ index + sin(2*pi*time) + cos(2*pi*time) + (1|year), REML = FALSE) %>% summary()
+```
+
+    index               7.225e-04  3.051e-04    2.368
+
+Model is slightly significant
+
+```{r}
+library(tidyr)
+sub %>% replace_na(list(tmax = 144))
+
+model4 <- lmer(data = sub, tmax ~ sin(2*pi*time) + cos(2*pi*time) + (1|year), REML = FALSE)
+```
+
+#### 
+```{r}
+plot(time, sub$tmax, pch = ".", col = alpha("black", 0.4), ylab = "temprature in tenth of Celsius", main = "Mixed Effect Model")
+lines(time[-1], fitted(model4), col = "#2196F3", lwd = 2)
+```
+```{r}
+summary(model)
+```
+
+### month
+
+```{r}
+model <- lmer(data = sub, tmax ~ index + (1 | (month))) 
+plot(fitted(model))
+summary(model)
+```
+
+    6.169e-04  1.278e-04   4.826
+
+## Time-Series Forecast
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(forecast)
+```
+
+### Fit Trend
+
+```{r}
+data %>%
+  select(year, month, tmax) %>%
+  group_by(year, month) %>%
+  dplyr::summarise(mean = mean(tmax, na.rm=TRUE)) %>% #note use dplyr summary if you load `plyr` afterwards they use `plyr` summary
+  pull(mean) %>%
+  ts(start = start, end = end + 1, delta = 1/12, frequency = 12) -> ts
+  
+model.ts1 <- tslm(ts ~ trend + season)
+model.ts2 <- tslm(ts ~ season)
+summary(model.ts1)
+plot(residuals(model.ts1), type = "p")
+```
+
+### Testing Trend
+
+```{r}
+anova(model.ts1, model.ts2)
+```
+
+```{r}
+data[(data$year > end), ] %>%
+  group_by(year, month) %>%
+  dplyr::summarise(mean = mean(tmax, na.drop = TRUE)) %>%
+  pull(mean) %>%
+  ts(start = end, end = 2011, delta = 1/12, frequency = 12) -> future
+```
+
+#### plot
+```{r}
+forecast(model.ts1, h = 120) %>%
+  plot(xlim = c(1997, 2004), lwd = 2, flty = 2, main = "Time Series via Linear Regression", ylab = "temprature in tenth of Celsius")
+lines(model.ts1$fitted.values, col = alpha("blue", 0.7), lwd = 2)
+lines(future, col = alpha("black", 0.7))
+```
+
+```{r}
+predict(model1)
+acf(residuals(model1), type = "p")
+
+```
+
+```{r}
+#install.packages("sjPlot")
+library(sjPlot) #for plotting lmer and glmer mods
+library(sjmisc) 
+#install.packages("effects")
+library(effects)
+library(sjstats) #use for r2 functions
+```
+
+## Linear Model
+
+```{r}
+data %>% 
+  group_by(year) %>%
+  dplyr::summarise(mean = mean(tmax, na.rm = TRUE)) -> df
+  
+2
+lm(data = df, mean ~ I(1:length(mean))) %>% summary()
+```
+
+# Visualize Results
+
+```{r}
+plot(model1)
+plot(model2)
+
+plot(1:length(residuals(model3)), residuals(model3))
+
+summary(model1)
+  model.ts1 
+```
+
+```{r}
+plot(1:length(ts), ts - fitted(model.ts1))
+```
+
+```{r}
+model <- lmer(data = sub, tmax ~ index + (1 | (month))) 
+plot(fitted(model))
+
+x = cbind(sub, fitted = fitted(model), residual = residuals(model))
+
+x %>%
+  ggplot(aes(x = date, y = fitted, colour = month)) + 
+  geom_line()
+
+x %>%
+  ggplot(aes(x  = date, y = tmax, colour = month)) + 
+  geom_smooth(method = lm, span = 0.8) + 
+  geom_point(alpha = 0.03) + 
+  theme(panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_rect(fill = "#fafafa"),
+          plot.background = element_rect(fill = "white")
+        )
+
+```
+
+```{r}
+data[(data$year >= start) & (data$year <= end), ] %>% attach()
+
+ys <- factor(1 + (year > 2000))
+tapply(tmax, ys, mean)
+```
+
+```{r}
+
+```

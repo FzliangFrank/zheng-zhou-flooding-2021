@@ -1,0 +1,431 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+YourTokenHere = "xOhVdMrdWTsFSZXCrRZJPXplNlPbgUWr"
+```
+
+```{r}
+library(rnoaa)  #Now you can load all the required libraries.
+#library(ncdf)
+#install.packages("ncdf")
+library(plyr)
+library(dplyr)
+library(devtools)
+
+#install.packages("fields")
+library(fields)
+#install.packages("GEOmap")
+library(GEOmap)
+library(leaflet)
+
+library(ggplot2)
+library(plotly)
+
+library(stats) #for anova function
+```
+
+```{r}
+ghcnd_stations(first_year = 2000, last_year = 2020) -> stations
+```
+
+### Find Station On Map
+```{r}
+lat = 34.7466
+lon = 113.6253
+
+lat_lon_df <- data.frame(id = c("station_x"),
+                         latitude = c(lat),
+                         longitude = c(lon))
+meteo_nearby_stations(
+  lat_lon_df = lat_lon_df,
+  station_data = stations, 
+  radius = 100,
+  limit = 10) -> leaf
+
+leaf$station_x
+#library(leaflet)
+
+leaf$station_x %>%
+leaflet() %>%
+  setView(lat = lat, lng = lon, zoom = 9) %>% 
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addMarkers(popup = ~id, label = ~name)
+```
+
+```{r}
+ncdc_stations(stationid = "GHCND:CHM00057083", token = YourTokenHere)
+```
+
+# Congrat!!! Data Got it!!!! Percipitation Data
+
+[The Global Historical Climatology Network (GHCN)](https://www.ncdc.noaa.gov/data-access/land-based-station-data/land-based-datasets/global-historical-climatology-network-ghcn) is an integrated database of climate summaries from land surface stations across the globe that have been subjected to a common suite of quality assurance reviews. The data are obtained from more than 20 sources. Some data are more than 175 years old while others are less than an hour old. GHCN is the official archived dataset, and it serves as a replacement product for older NCEI-maintained datasets that are designated for daily temporal resolution (i.e., DSI 3200, DSI 3201, DSI 3202, DSI 3205, DSI 3206, DSI 3208, DSI 3210, etc.).
+
+### ZhenZhou Data
+Precipitation is measured by tenth of mm (1/100 of cm). Full abbreviation can be found here: https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/readme.txt
+```{r}
+ghcnd_search(stationid = "CHM00057083", date_min = "1960-01-01", date_max = "2021-07-30")$prcp -> df
+df %>%
+  dplyr::select(date, prcp) -> pcp_zhengzhou
+
+with(pcp_zhengzhou, plot(date, prcp, type = "h"))
+```
+
+wirte data into dataframe
+```{r}
+ghcnd_search(stationid = "CHM00057083", date_min = "1960-01-01", date_max = "2021-07-30")$tmax -> temp
+write.csv(pcp_zhengzhou, "./raw/prcp.csv")
+write.csv(pcp_zhengzhou, "./raw/")
+```
+
+
+```{r}
+g <- pcp_zhengzhou %>%
+  ggplot(aes(x = date, y = prcp)) + 
+  geom_line(color = "blue") + 
+  theme(panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_rect(fill = "#fafafa"),
+          plot.background = element_rect(fill = "white")
+        )
+ggplotly(g)
+```
+
+```{r}
+filter = pcp_zhengzhou$date >= "2015-01-01"
+pcp_zhengzhou[filter,] %>%
+  ggplot(aes(x = date, y = prcp)) + 
+  geom_col(color = "blue") + 
+  theme(panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_rect(fill = "#fafafa"),
+          plot.background = element_rect(fill = "white")
+        ) -> g
+
+ggplotly(g)
+```
+
+# RQ2: Internal Correlation Between Rainfall and Temprature in General
+```{r}
+ghcnd_search(stationid = "CHM00057083", date_min = "1960-01-01", date_max = "2021-07-30") -> df
+
+
+df$tmax %>%
+  select(date, tmax) %>%
+  inner_join(pcp_zhengzhou, by = "date") -> df2
+
+df$tmin %>%
+  select(date, tmin) %>%
+  inner_join(df2, by = "date") %>%
+  mutate(delta = tmax - tmin) -> prcp_delta
+```
+
+
+Precipitation with maximum temprature
+```{r}
+with(df2, lm(prcp ~ tmax)) %>%
+  summary()
+```
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 9.178337   1.153791   7.955 1.89e-15 ***
+tmax        0.042150   0.005049   8.347  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 74.48 on 20075 degrees of freedom
+  (1316 observations deleted due to missingness)
+Multiple R-squared:  0.003459,	Adjusted R-squared:  0.003409
+F-statistic: 69.68 on 1 and 20075 DF,  p-value: < *2.2e-16*
+
+So temperature itself not at all predict any of precipitation. This does present some sort of explaination because Zhengzhou is expecting rains in summer where maximum temprature are highest.
+
+Daily Temprature Change to Percipitation
+```{r}
+with(prcp_delta, 
+     lm(prcp ~ delta)
+     ) %>%
+  summary()
+```
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 56.67227    1.32419   42.80   <2e-16 ***
+delta       -0.36900    0.01146  -32.19   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 72.45 on 19677 degrees of freedom
+  (1714 observations deleted due to missingness)
+Multiple R-squared:  0.05002,	Adjusted R-squared:  0.04997 
+F-statistic:  1036 on 1 and 19677 DF,  p-value: < 2.2e-16
+
+Daily temperature change does not seems to explain amount of rainfall at all... it is non-linear model after all. 
+
+## Shift Backwards, max temprature n days ago affect pricipitation
+
+```{r}
+prcp_delta %>%
+  select(date, tmax) %>%
+  mutate(earlier = date - 11) %>%
+  select(earlier, tmax) %>%
+  inner_join(select(prcp_delta, date, prcp), by = c("earlier" = "date")) %>%
+  with(lm(prcp ~ tmax)) %>%
+  summary()
+
+```
+
+On the day temp: 
+Multiple R-squared:  0.003459,	Adjusted R-squared:  0.003409
+-1 earlier day:
+Multiple R-squared:  0.00532,	Adjusted R-squared:  0.00527 
+- 2 earlier day: 
+Multiple R-squared:  0.01001,	Adjusted R-squared:  0.00996 
+- 3 earlier day: 
+Multiple R-squared:  0.01277,	Adjusted R-squared:  0.01272
+- 4 earlier day: 
+Multiple R-squared:  0.01426,	Adjusted R-squared:  0.01421 
+- 5 earlier day: 
+Multiple R-squared:  0.01596,	Adjusted R-squared:  0.01591 
+- 6 earlier day: 
+Multiple R-squared:  0.01647,	Adjusted R-squared:  0.01642
+- 15 earlier day: 
+Multiple R-squared:  0.0173,	Adjusted R-squared:  0.01725 
+- 12 earlier day: 
+Multiple R-squared:  0.01807,	Adjusted R-squared:  0.01802 
+- 10 earlier day: 
+Multiple R-squared:  0.01834,	Adjusted R-squared:  0.01829 
+
+- 11 earlier day: 
+Multiple R-squared:  0.01877,	Adjusted R-squared:  0.01872
+```{r}
+prcp_delta %>%
+  select(date, delta) %>%
+  mutate(earlier = date) %>%
+  select(earlier, delta) %>%
+  inner_join(select(prcp_delta, date, prcp), by = c("earlier" = "date")) %>%
+  with(lm(prcp ~ delta)) %>%
+  summary()
+```
+
+```{r}
+prcp_delta %>%
+  select(date, tmax, tmin) %>%
+  mutate(avg = (tmax + tmin)/2) %>%
+  mutate(earlier = date - 10) %>%
+  select(earlier, avg) %>%
+  inner_join(select(prcp_delta, date, prcp), by = c("earlier" = "date")) %>%
+  with(lm(prcp ~ avg)) %>%
+  summary()
+```
+Multiple R-squared:  0.01221,	Adjusted R-squared:  0.01216
+
+Previous 12 days: 
+Multiple R-squared:  0.02255,	Adjusted R-squared:  0.0225 
+Previous 10 days: 
+Multiple R-squared:  0.0229,	Adjusted R-squared:  0.02285 
+
+Previous 11 days:
+Multiple R-squared:  0.02347,	Adjusted R-squared:  0.02342 
+
+11 is golden umber somehow... 
+
+save data
+```{r}
+write.csv(prcp_delta, file = "raw/noaa_data.csv")
+```
+
+```{r}
+prcp_delta %>%
+  ggplot(aes(delta)) + geom_density()
+
+cbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+library(viridis)
+viridis(61)
+
+
+prcp_delta %>%
+  mutate(year = format(date, "%Y")) %>%
+  ggplot(aes(delta)) + 
+  geom_density_ridges_gradient(adjust  = 0.3, stat = "density", scale = 10, 
+                      kernel = "epanechnikov",
+                      color = NA)
+  
+```
+
+## Use Build-in TS
+```{r}
+library("forecast")
+prcp_delta %>%
+  mutate(year = format(date, "%Y")) %>%
+  mutate(month = format(date, "%m")) %>%
+  select(year, month, tmax) %>%
+  group_by(year, month) %>%
+  summarise(median_temp = median(tmax)) %>%
+  pull(median_temp) %>%
+  ts(deltat = 1/12, frequency = 12, start = 1960, end = 2021) -> t
+  # use median number better to represent situation where there is an extreme fall
+train.ts <- window(t, start = c(1960,1), end = c(2000, 1))
+valid.ts <- window(t, start = c(2000,2), end = c(2020,1))
+
+train.lm <- tslm(train.ts ~ trend + season)
+lm.pred <- forecast(train.lm, h = 156)
+
+plot(lm.pred, xlim = c(1960, 2013), lwd = "2",flty = 2)
+lines(valid.ts, col = "darkgrey")
+lines(train.lm$fitted.values)
+
+summary(train.lm)
+```
+Multiple R-squared:  0.9621,	Adjusted R-squared:  0.9611 
+F-statistic: 985.4 on 12 and 466 DF,  p-value: < 2.2e-16
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 5.288e+01  3.406e+00  15.524  < 2e-16 ***
+trend       4.149e-03  6.408e-03   0.647    0.518    
+season2     2.921e+01  4.320e+00   6.760 4.14e-11 ***
+
+Estimation of the trendline is not signficant at all
+
+### Decomposite
+```{r}
+tempt[(tmax$year <= 2010) & (tmax$year >= 1970),] %>%
+  group_by(year, month) %>%
+  summarise(median_temp = median(tmax)) %>%
+  replace_na(list(median_temp = 144)) %>%
+  pull(median_temp) %>% 
+  ts(deltat = 1/12, frequency = 12, start = 1960, end = 2021) %>%
+  stl("periodic") %>%
+  plot()
+```
+
+## lme or lmer method 
+```{r}
+library(tidyr) #need use replace_na to remove na function
+prcp_delta %>%
+  mutate(year = format(date, "%Y")) %>%
+  mutate(month = format(date, "%m")) %>%
+  select(year, month, tmax) -> tempt
+
+tempt[(tmax$year <= 2010) & (tmax$year >= 1970),] %>%
+  pull(tmax) %>%
+  length() 
+# select and complete data
+tempt[(tmax$year <= 2010) & (tmax$year >= 1970),] %>%
+  replace_na(list(tmax = 141)) -> df_season # 141 is median temperature of March 1993 computed below
+
+index = 1:14975 # make a list from day 1 to day 14975
+time = index/365.2439
+
+model <- lm(df_season$tmax ~ index + sin(time*2*pi) + cos(time*2*pi))
+
+plot(time,df_season$tmax, pch = ".")
+lines(time,model$fitted.values, col = "red", lwd = 2)
+
+summary(model)
+```
+-- foot note --
+compute data length = 14975 
+over 41 years the: 
+compute average days in a year = 365.2439 
+
+check na value: `df_season[is.na(df_season$tmax) == TRUE, ]`
+you find out that `1993` contains one na value in march
+Use this function to compute median temperature of that month
+```
+df_season[(df_season$year == "1993") & (df_season$month == "03"),] %>%
+  pull(tmax) %>%
+  median()
+``` 
+```
+From Above Model: 
+Coefficients:
+                     Estimate Std. Error  t value Pr(>|t|)    
+(Intercept)         1.977e+02  7.213e-01  274.042   <2e-16 ***
+index               7.045e-04  8.343e-05    8.444   <2e-16 ***
+sin(time * 2 * pi) -2.964e+01  5.100e-01  -58.123   <2e-16 ***
+cos(time * 2 * pi) -1.279e+02  5.099e-01 -250.757   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 44.13 on 14971 degrees of freedom
+Multiple R-squared:  0.8159,	Adjusted R-squared:  0.8159 
+F-statistic: 2.212e+04 on 3 and 14971 DF,  p-value: < 2.2e-16
+```
+Index was tested significant, so Zhengzhou is 0.0007 hoter year by year...
+So... from ts
+
+The R book suggest there are too much temporal pseudoreplication. You should use `lmer`
+```{r}
+ys <- factor(1 + (df_season$year > "2000"))
+tapply(df_season$tmax, ys, mean)
+```
+
+## Testing Trend in Time Series
+```{r}
+library(lme4)
+
+model2 <- lmer(df_season$tmax ~ index + sin(time*2*pi) + cos(time*2*pi) + (1 | factor(df_season$year)), REML = FALSE)
+
+model3 <- lmer(df_season$tmax ~ sin(time*2*pi) + cos(time*2*pi) + (1 | factor(df_season$year)), REML = FALSE)
+
+summary(model3)
+anova(model2, model3)
+```
+note you somehow have to set `REML` to false to make `anova()` work. 
+Print Result as: 
+```
+Data: NULL
+Models:
+model3: df_season$tmax ~ sin(time * 2 * pi) + cos(time * 2 * pi) + (1 | 
+model3:     factor(df_season$year))
+model2: df_season$tmax ~ index + sin(time * 2 * pi) + cos(time * 2 * 
+model2:     pi) + (1 | factor(df_season$year))
+       npar    AIC    BIC logLik deviance  Chisq Df Pr(>Chisq)    
+model3    5 155823 155861 -77906   155813                         
+model2    6 155811 155857 -77900   155799 13.134  1  0.0002899 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+```
+So Pr(>Chisq) is significant
+
+```{r}
+df_season %>%
+  mutate(year = factor(year)) %>%
+  mutate(month = factor(month)) -> data
+
+model4 <- lmer(data = data, tmax ~ index + sin(time*2*pi) + cos(time*2*pi) + (1 | year/month), REML = FALSE)
+model5 <- lmer(data = data, tmax ~ sin(time*2*pi) + cos(time*2*pi) + (1 | year/month), REML = FALSE)
+
+anova(model4, model5)
+summary(model4) #group by month
+summary(model2) #group by year only 
+```
+
+## Maybe Because in `ts` function we included all data and there were too munch omit? 
+note `df_season` is not grouped
+```{r}
+df_season$year %>%
+  min()
+df_season %>%
+  group_by(year, month) %>%
+  summarise(mean = mean(tmax), median = median(tmax)) %>%
+  pull(mean) %>%
+  ts(deltat = 1/12, frequency = 12, start = 1970, end = 2011) -> ts #must select to 2011 otherwise the code do not include 2010 data
+
+model.ts1 <- tslm(ts ~ trend + season)
+model.ts2 <- tslm(ts ~ season) 
+
+anova(model.ts1, model.ts2)
+
+tslm(ts ~ trend + season) %>%
+  summary()
+```
+
+
+

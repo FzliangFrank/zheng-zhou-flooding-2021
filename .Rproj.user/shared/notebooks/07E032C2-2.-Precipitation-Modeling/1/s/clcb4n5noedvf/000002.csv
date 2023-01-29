@@ -1,0 +1,7 @@
+"0","```r
+for(n in BREAKS)
+  data %>%
+      filter((year >= 1960) & (year <= 1969)) %>%
+      pull(prcp) %>%
+      hist(breaks = n)
+```"

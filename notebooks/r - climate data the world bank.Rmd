@@ -1,0 +1,116 @@
+---
+title: "R - Climate Data the world bank"
+author: "Frank Liang"
+date: "27/07/2021"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+
+#install.packages(c("httr", "jsonlite"))
+library(httr)
+library(jsonlite)
+```
+
+# World Bank API
+Note a lot of the data are forecast based on models
+details regard api visit: https://datahelpdesk.worldbank.org/knowledgebase/articles/902061-climate-data-api
+
+The Climate Data API uses REST-based requests, in which the general form looks like this:
+
+`http://climatedataapi.worldbank.org/climateweb/rest/v1/country/type/var/start/end/ISO3`
+
+`mavg` for Monthly average 
+`annualavg` for Annual average 
+`manom` average monthly change
+`annualanom` average annual change
+
+Two variable you can study about flood by `precipitation` or by `basinID`. for latter just change the country code to a number from 1 to 468. [Click here](http://data.worldbank.org/sites/default/files/climate_data_api_basins.pdf) for a complete basin map.
+
+```{r}
+link = "http://climatedataapi.worldbank.org/climateweb/rest/v1/country/mavg/pr/2020/2039/CHN.csv"
+
+data <- read.csv(link)
+View(data)
+data[,c(6:17)]
+```
+In this data frame the 15 GCM are types of circulation models used to estimate... 
+
+
+# R- NOAA data
+thanks to [this data](http://spatialecology.weebly.com/r-code--data/34)
+
+```{r}
+YourTokenHere = "xOhVdMrdWTsFSZXCrRZJPXplNlPbgUWr"
+```
+
+```{r}
+# Enter the Token that was sent to your email below.
+options(noaakey = "xOhVdMrdWTsFSZXCrRZJPXplNlPbgUWr")
+require(devtools)  #Make sure this package is installed
+devtools::find_rtools()  #Make sure Rtools can be found
+
+devtools::install_github("ropensci/rnoaa")  # Installing the rnoaa() package from the GitHub Page.
+```
+
+```{r}
+library(rnoaa)  #Now you can load all the required libraries.
+library(ncdf)
+#install.packages("ncdf")
+library(plyr)
+library(devtools)
+
+#install.packages("fields")
+library(fields)
+#install.packages("GEOmap")
+library(GEOmap)
+```
+
+```{r}
+MI_Monthly <- ncdc(datasetid = "GHCNDMS", locationid = "FIPS:26065", stationid = "GHCND:USW00014836", 
+    datatypeid = "TPCP", startdate = "2000-01-01", enddate = "2010-01-01", limit = 1000, token = YourTokenHere)
+
+ncdc_plot(MI_Monthly, breaks = "12 months", dateformat = "%Y")
+```
+
+```{r}
+MI_Annual <- ncdc(datasetid = "ANNUAL", locationid = "FIPS:26065", datatypeid = "DSNW", 
+    startdate = "2000-01-01", enddate = "2010-01-01", limit = 1000, token = YourTokenHere)
+ncdc_plot(MI_Annual, breaks = "1 year", dateformat = "%Y")
+```
+
+```{r}
+# list of all stations:
+ghcnd_stations(lattitude = 53.4808 , longitude = -2.2426, first_year = 2015, last_year = 2020) -> stations
+
+#make df
+lat_lon_df <- data.frame(id = c("sydney", "brisbane"),
+                         latitude = c(-33.8675, -27.4710),
+                         longitude = c(151.2070,153.0234))
+meteo_nearby_stations(
+  lat_lon_df = lat_lon_df,
+  station_data = stations, 
+  radius = 50,
+  limit = 10
+) -> nearStation
+```
+
+```{r}
+library(leaflet)
+```
+
+```{r}
+nearStation$sydney %>%
+  View()
+```
+
+```{r}
+leaflet(nearStation$sydney) %>%
+  setView(lat = -33.8675, lng = 151.2070, zoom = 12) %>% 
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addMarkers(popup = ~id, label = ~name)
+
+```
+

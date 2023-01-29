@@ -1,0 +1,12 @@
+"0","```r
+read.csv(\"./raw/prcp.csv\") %>%
+  mutate(date = as.Date(date)) %>%
+  mutate(year = format(date, \"%Y\")) %>%
+  filter(prcp != 0) %>%
+  dplyr::select(date, year, prcp) -> data
+
+data %>%
+  filter(year <= 2020) %>%
+  pull(prcp) %>%
+  hist(breaks = 1000, plot = FALSE) -> hist
+```"
