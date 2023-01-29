@@ -1,6 +1,6 @@
 ---
 title: "Precipitation in Zhengzhou"
-document: github_document
+output: github_document
 ---
 
 <!-- badges: start -->
