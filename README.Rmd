@@ -1,0 +1,38 @@
+---
+title: "Precipitation in Zhengzhou"
+document: github_document
+---
+
+<!-- badges: start -->
+[![Lifecycle: experimental](https://img.shields.io/badge/analysis-exploratory-blue.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+<!-- badges: end -->
+
+
+# Precipitation Analysis in Zhengzhou
+
+A time series analysis on Zhengzhou Precipitation, temperature, and global warming. 
+
+## The Story Goes..
+
+I used to live in Zhengzhou city. The year is 2016, My uni is in far western end Zhengzhou
+Two hours ride on subways (or UK they call it "tube") from "ErQi Square" which is the vibrant town centre of Zhengzhou City.
+
+I used to ride the tube every now and then. 
+Because the underground rail way system was new development, comfortable. It is 
+one of few subways system in China that actually have AC and 4G signals. 
+Zhengzhou is considering one of four "hottest cities" in mainland 
+China. During hot boiling summer, the subway is extra-ordinarily chill. For us 
+students who don't have AC at dorm, we just wish we could sleep on the railway. 
+
+I left the city for UK in 2018. Three years after I left, the city was flooded. 
+The very tube line I used to ride is compromised. Underground tubes turns into 
+underground river. People who ride tube on the day and couldn't get out 
+in time drowned or suffocated. These are people who ride the tube every day. 
+
+
+While Zhengzhou is the hottest city, it is also the most populated, capital of
+Henan, the province with largest proportion of poverty. Having the underground 
+tube built was one of the proudest things of Zhengzhou people. It turns out the
+tube system did not proofed against extreme precipitation.
+
+This analysis reveals some obvious participation pattern in Zhengzhou in the past.

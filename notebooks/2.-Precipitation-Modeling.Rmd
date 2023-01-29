@@ -43,7 +43,6 @@ Use data from 1960 - 2010 for modeling precipitation
 hist$counts %>% sum() -> sum
 x <- hist$mids 
 y <- hist$counts/sum 
-
 data.frame(x, y) -> dens 
 ```
 
@@ -52,7 +51,6 @@ model <- drm(data = dens, y ~ log(x), fct = EXD.2())
 summary(model)
 d = 0.1407885
 e = 1.3292414
-
 k <- 1/e/d
 ```
 
