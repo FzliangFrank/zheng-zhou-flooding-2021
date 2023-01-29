@@ -1,9 +1,0 @@
----
-title: "This is an Experiment"
----
-Hello World
-    
-```{r}
-
-```
-

@@ -5,9 +5,6 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r}
-YourTokenHere = "xOhVdMrdWTsFSZXCrRZJPXplNlPbgUWr"
-```
 
 ```{r}
 library(rnoaa)  #Now you can load all the required libraries.
@@ -18,7 +15,7 @@ library(dplyr)
 library(devtools)
 
 #install.packages("fields")
-library(fields)
+# library(fields)
 #install.packages("GEOmap")
 library(GEOmap)
 library(leaflet)
@@ -58,7 +55,7 @@ leaflet() %>%
 ```
 
 ```{r}
-ncdc_stations(stationid = "GHCND:CHM00057083", token = YourTokenHere)
+ncdc_stations(stationid = "GHCND:CHM00057083", token = Sys.getenv("NOAA_TOKEN"))
 ```
 
 # Congrat!!! Data Got it!!!! Percipitation Data

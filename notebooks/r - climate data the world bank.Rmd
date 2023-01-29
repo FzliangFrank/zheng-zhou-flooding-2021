@@ -16,7 +16,7 @@ library(jsonlite)
 
 # World Bank API
 Note a lot of the data are forecast based on models
-details regard api visit: https://datahelpdesk.worldbank.org/knowledgebase/articles/902061-climate-data-api
+details regard api visit: https://datahelpdesk.worldbank.org/knowledgebase/articles/902061-climate-data-ap
 
 The Climate Data API uses REST-based requests, in which the general form looks like this:
 

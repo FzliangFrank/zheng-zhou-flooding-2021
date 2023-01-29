@@ -8,14 +8,24 @@ output: github_document
 <!-- badges: end -->
 
 
-# Precipitation Analysis in Zhengzhou
+# Data Exploratory Analysis on Zhengzhou Climate Data
 
 A time series analysis on Zhengzhou Precipitation, temperature, and global warming. 
+
+
+## Data
+rnoaa data submitted by 
+
+## Methodlogy 
+
+
+*parametrisation*
+
 
 ## The Story Goes..
 
 I used to live in Zhengzhou city. The year is 2016, My uni is in far western end Zhengzhou
-Two hours ride on subways (or UK they call it "tube") from "ErQi Square" which is the vibrant town centre of Zhengzhou City.
+Two hours ride on subways (or UK they call it "tube") from "ErQi Square" which is the vibrant town center of Zhengzhou City.
 
 I used to ride the tube every now and then. 
 Because the underground rail way system was new development, comfortable. It is 
